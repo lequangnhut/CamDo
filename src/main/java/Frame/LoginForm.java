@@ -1,10 +1,12 @@
 package Frame;
 
+import DAO.HistoryDao;
 import DAO.UserDao;
 import Entity.User;
-import Utils.Auth;
 import Utils.MsgBox;
+import Utils.SessionManager;
 import java.awt.Toolkit;
+import java.awt.event.KeyEvent;
 import java.util.prefs.Preferences;
 
 /**
@@ -12,7 +14,8 @@ import java.util.prefs.Preferences;
  */
 public class LoginForm extends javax.swing.JFrame {
 
-    UserDao userDao = new UserDao();
+    private final UserDao userDao = new UserDao();
+    private final HistoryDao historyDao = new HistoryDao();
 
     Preferences preferences;
     boolean rememberPreferences;
@@ -27,7 +30,7 @@ public class LoginForm extends javax.swing.JFrame {
         rememberMe();
     }
 
-    private void rememberMe() {
+    public void rememberMe() {
         preferences = Preferences.userNodeForPackage(this.getClass());
         rememberPreferences = preferences.getBoolean("rememberMe", Boolean.valueOf(""));
         if (rememberPreferences) {
@@ -37,17 +40,18 @@ public class LoginForm extends javax.swing.JFrame {
         }
     }
 
-    private void login() {
+    public void login() {
         String username = txtUser.getText();
         String password = txtPassword.getText();
 
-        User nhanvien = userDao.findNhanVienByUsername(username, password);
+        User user = userDao.login(username, password);
+
         if (txtUser.getText().equals("")) {
             MsgBox.alert(this, "Vui lòng nhập tên đăng nhập !");
-            return;
-        }
-        if (txtPassword.getText().equals("")) {
+
+        } else if (txtPassword.getText().equals("")) {
             MsgBox.alert(this, "Vui lòng nhập mật khẩu !");
+
         } else {
             if (!chkRMB.isSelected() && rememberPreferences) {
                 preferences.put("User", "");
@@ -58,16 +62,19 @@ public class LoginForm extends javax.swing.JFrame {
                 preferences.put("Password", txtPassword.getText());
                 preferences.putBoolean("rememberMe", true);
             }
-            if (nhanvien != null) {
-                MainForm mf = new MainForm();
+
+            if (user != null) {
+                MainFrame mf = new MainFrame();
                 mf.setVisible(true);
-                mf.setExtendedState(MainForm.MAXIMIZED_BOTH);
-                Auth.user = nhanvien;
+                mf.setExtendedState(MainFrame.MAXIMIZED_BOTH);
+                SessionManager.login(user);
                 dispose();
+                historyDao.addHistory(user, "Đăng nhập");
                 MsgBox.alert(this, "Đăng nhập thành công !");
             } else {
                 MsgBox.alert(this, "Sai tên đăng nhập hoặc mật khẩu !");
             }
+
         }
     }
 
@@ -111,6 +118,11 @@ public class LoginForm extends javax.swing.JFrame {
         btnLogin.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnLoginActionPerformed(evt);
+            }
+        });
+        btnLogin.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                btnLoginKeyPressed(evt);
             }
         });
 
@@ -212,6 +224,12 @@ public class LoginForm extends javax.swing.JFrame {
     private void btnExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExitActionPerformed
         System.exit(0);
     }//GEN-LAST:event_btnExitActionPerformed
+
+    private void btnLoginKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_btnLoginKeyPressed
+        if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
+            btnLogin.doClick();
+        }
+    }//GEN-LAST:event_btnLoginKeyPressed
 
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */

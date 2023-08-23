@@ -7,6 +7,7 @@
     	<class>Entity.Laisuat</class>
     	<class>Entity.Phieucam</class>
     	<class>Entity.User</class>
+    	<class>Entity.History</class>
         <properties>
             <property name="javax.persistence.jdbc.driver" value="com.microsoft.sqlserver.jdbc.SQLServerDriver"/>
             <property name="javax.persistence.jdbc.url" value="jdbc:sqlserver://localhost:1433;database=CamDo"/>

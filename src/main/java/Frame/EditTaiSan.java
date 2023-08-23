@@ -1,14 +1,16 @@
 package Frame;
 
+import DAO.HistoryDao;
 import DAO.LaisuatDao;
 import DAO.PhieuCamDao;
 import Entity.Laisuat;
 import Entity.Phieucam;
-import static Frame.MainForm.tblDanhsach;
-import Utils.Auth;
+import static Frame.MainFrame.tblDanhsach;
 import Utils.MsgBox;
+import Utils.SessionManager;
 import Utils.XDate;
 import Utils.XMoney;
+import Utils.validateInput;
 import java.awt.Toolkit;
 import java.util.Date;
 import java.util.List;
@@ -21,6 +23,7 @@ public final class EditTaiSan extends javax.swing.JDialog {
 
     private final PhieuCamDao phieuCamDao = new PhieuCamDao();
     private final LaisuatDao laisuatDao = new LaisuatDao();
+    private final HistoryDao historyDao = new HistoryDao();
 
     public EditTaiSan(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
@@ -30,10 +33,20 @@ public final class EditTaiSan extends javax.swing.JDialog {
 
     public void init() {
         txtMaphieu.setEditable(false);
-        fillFormEdit();
-        XMoney.caculatorLaixuat(txtSotien, txtTongtienthang);
+        txtFullname.setEditable(false);
         txtPhantram.setEditable(false);
-        setIconImage(Toolkit.getDefaultToolkit().getImage(MainForm.class.getResource("/Icon/windowbar.png")));
+        txtTongtienthang.setEditable(false);
+        txtDate1.setEnabled(false);
+        txtDate2.setEnabled(false);
+
+        fillFormEdit();
+
+        validateInput.allowOnlyText(txtFullname);
+        validateInput.formatPhoneNumber(txtPhonenumber);
+        validateInput.autoUpperCaseWithMaxLength(txtBienso, 11);
+
+        XMoney.caculatorLaixuat(txtSotien, txtTongtienthang);
+        setIconImage(Toolkit.getDefaultToolkit().getImage(MainFrame.class.getResource("/Icon/windowbar.png")));
     }
 
     public boolean check() {
@@ -50,6 +63,27 @@ public final class EditTaiSan extends javax.swing.JDialog {
                 || sotien.isEmpty() || ngaycam == null || ngaychuoc == null
                 || phantram.isEmpty() || tongtien.isEmpty()) {
             MsgBox.alert(this, "Vui lòng điền đầy đủ thông tin !");
+            return false;
+        }
+
+        // Kiểm tra họ tên người Việt Nam bằng biểu thức chính quy
+        String fullnameRegex = "^[\\p{L} '-]+$";
+        if (!fullname.matches(fullnameRegex)) {
+            MsgBox.alert(this, "Họ tên không hợp lệ !");
+            return false;
+        }
+
+        // Kiểm tra số điện thoại người Việt Nam bằng biểu thức chính quy
+        String phoneRegex = "^(\\+?84|0)(3[2-9]|5[689]|7[06-9]|8[1-9]|9[0-46-9])[0-9]{7}$";
+        if (!phone.matches(phoneRegex)) {
+            MsgBox.alert(this, "Số điện thoại không không hợp lệ !");
+            return false;
+        }
+
+        // Kiểm tra biển số xe Việt Nam bằng biểu thức chính quy
+        String biensoRegex = "^[0-9]{2}[A-HJ-NP-Za-hj-np-z0-9]{2}-[0-9]{3,4}(\\.[0-9]{2})?$";
+        if (!bienso.matches(biensoRegex)) {
+            MsgBox.alert(this, "Biển số xe không đúng định dạng !");
             return false;
         }
 
@@ -129,14 +163,14 @@ public final class EditTaiSan extends javax.swing.JDialog {
             if (pc != null) {
                 pc.setMaphieu(maphieu);
                 pc.setFullname(fullname);
-                pc.setPhonenumber(Integer.parseInt(phone));
+                pc.setPhonenumber(phone);
                 pc.setGiacamco(sotiencam);
                 pc.setTienlai(sotienlai);
                 pc.setBienso(bienso);
                 pc.setNgaycam(ngayCamTimestamp);
                 pc.setNgayhethan(ngayChuocTimestamp);
                 pc.setStatus("Đang cầm");
-                pc.setUser(Auth.user);
+                pc.setUser(SessionManager.getCurrentUser());
                 pc.setLaisuat(ls);
                 pc.setIsActive(Boolean.TRUE);
             }
@@ -146,7 +180,9 @@ public final class EditTaiSan extends javax.swing.JDialog {
                 if (phieucam != null) {
                     MsgBox.alert(this, "Cập nhật phiếu cầm thành công !");
                     fillTable();
+                    MainFrame.generalTotal();
                     dispose();
+                    historyDao.addHistory(SessionManager.getCurrentUser(), "Cập nhật biên lai");
                 }
             }
         }
@@ -189,9 +225,9 @@ public final class EditTaiSan extends javax.swing.JDialog {
         btnSaveAndPrint = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        setTitle("Thêm Phiếu Cầm");
+        setTitle("Sửa Biên Lai Cầm Xe");
 
-        jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Thông tin phiếu cầm đồ", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Segoe UI", 0, 14))); // NOI18N
+        jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Thông tin biên lai cầm xe", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Segoe UI", 0, 14))); // NOI18N
 
         jLabel1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabel1.setText("KHÁCH HÀNG");
@@ -280,12 +316,12 @@ public final class EditTaiSan extends javax.swing.JDialog {
         jLabel6.setText("THÔNG TIN CẦM CỐ");
 
         jLabel7.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel7.setText("Mã phiếu");
+        jLabel7.setText("Mã biên lai");
 
         txtMaphieu.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
 
         jLabel9.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel9.setText("Tính từ ngày");
+        jLabel9.setText(" Tính từ ngày");
 
         jLabel10.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel10.setText("Số tiền");
@@ -373,16 +409,12 @@ public final class EditTaiSan extends javax.swing.JDialog {
                 .addContainerGap()
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addGap(7, 7, 7)
+                        .addGap(12, 12, 12)
                         .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addGroup(jPanel4Layout.createSequentialGroup()
-                                    .addGap(19, 19, 19)
-                                    .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                        .addComponent(jLabel10)
-                                        .addComponent(jLabel7)))
-                                .addComponent(jLabel9))
-                            .addComponent(jLabel11))
+                            .addComponent(jLabel10)
+                            .addComponent(jLabel7)
+                            .addComponent(jLabel11)
+                            .addComponent(jLabel9))
                         .addGap(31, 31, 31)
                         .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                             .addComponent(txtDate2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 130, Short.MAX_VALUE)
@@ -430,7 +462,7 @@ public final class EditTaiSan extends javax.swing.JDialog {
         });
 
         btnSave.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        btnSave.setText("Lưu");
+        btnSave.setText("Chỉnh sửa");
         btnSave.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnSaveActionPerformed(evt);

@@ -21,7 +21,7 @@ public class Phieucam {
 
     private Timestamp ngayhethan;
 
-    private int phonenumber;
+    private String phonenumber;
 
     private String status;
 
@@ -88,11 +88,11 @@ public class Phieucam {
         this.ngayhethan = ngayhethan;
     }
 
-    public int getPhonenumber() {
+    public String getPhonenumber() {
         return this.phonenumber;
     }
 
-    public void setPhonenumber(int phonenumber) {
+    public void setPhonenumber(String phonenumber) {
         this.phonenumber = phonenumber;
     }
 

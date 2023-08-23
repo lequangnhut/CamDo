@@ -1,10 +1,14 @@
 package DAO;
 
 import Entity.Phieucam;
-import SQL.JPAUtil;
+
 import java.util.List;
 import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import javax.persistence.TypedQuery;
+
+import SQL.JPAUtil;
+import java.time.LocalDate;
 
 /**
  * @author NHUTLQ
@@ -20,6 +24,73 @@ public class PhieuCamDao extends AbstactDao<Phieucam> {
         return super.findOne(Phieucam.class, jpql, maphieu);
     }
 
+//    tìm lai trong tháng
+    public int findTotalPhieuTrongThang() {
+        EntityManager entityManager = JPAUtil.getEntityManager();
+
+        LocalDate currentDate = LocalDate.now();
+        int currentMonth = currentDate.getMonthValue();
+
+        String jpql = "SELECT COUNT(o) FROM Phieucam o WHERE MONTH(o.ngaycam) = ?0";
+        Query query = entityManager.createQuery(jpql);
+        query.setParameter(0, currentMonth);
+
+        Long totalCount = (Long) query.getSingleResult();
+        return totalCount.intValue();
+    }
+
+    public int findTotalTienLaiTrongThang() {
+        EntityManager entityManager = JPAUtil.getEntityManager();
+
+        LocalDate currentDate = LocalDate.now();
+        int currentMonth = currentDate.getMonthValue();
+
+        String jpql = "SELECT SUM(o.giacamco) FROM Phieucam o WHERE MONTH(o.ngaycam) = ?0";
+        Query query = entityManager.createQuery(jpql);
+        query.setParameter(0, currentMonth);
+
+        Long totalMoney = (Long) query.getSingleResult();
+        if (totalMoney != null) {
+            return totalMoney.intValue();
+        } else {
+            return 0;
+        }
+    }
+
+//    tìm lai trong ngày
+    public int findTotalPhieuTrongNgay() {
+        EntityManager entityManager = JPAUtil.getEntityManager();
+
+        LocalDate currentDate = LocalDate.now();
+        int dayOfMonth = currentDate.getDayOfMonth();
+
+        String jpql = "SELECT COUNT(o) FROM Phieucam o WHERE DAY(o.ngaycam) = ?0 AND isActive = 1";
+        Query query = entityManager.createQuery(jpql);
+        query.setParameter(0, dayOfMonth);
+
+        Long totalCount = (Long) query.getSingleResult();
+        return totalCount.intValue();
+    }
+
+    public int findTotalTienLaiTrongNgay() {
+        EntityManager entityManager = JPAUtil.getEntityManager();
+
+        LocalDate currentDate = LocalDate.now();
+        int dayOfMonth = currentDate.getDayOfMonth();
+
+        String jpql = "SELECT SUM(o.giacamco) FROM Phieucam o WHERE DAY(o.ngaycam) = ?0 AND isActive = 1";
+        Query query = entityManager.createQuery(jpql);
+        query.setParameter(0, dayOfMonth);
+
+        Long totalMoney = (Long) query.getSingleResult();
+        if (totalMoney != null) {
+            return totalMoney.intValue();
+        } else {
+            return 0;
+        }
+    }
+
+//    thêm thông tin lai
     public Phieucam addPhieu(Phieucam entity) {
         return super.create(entity);
     }

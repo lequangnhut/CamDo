@@ -10,10 +10,14 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+    
+    private String fullname;
 
     private String password;
 
     private String username;
+
+    private boolean isAdmin;
 
     @OneToMany(mappedBy = "user")
     private List<Phieucam> phieucams;
@@ -28,8 +32,24 @@ public class User {
     public void setId(int id) {
         this.id = id;
     }
+    
+    public String getFullname() {
+		return fullname;
+	}
 
-    public String getPassword() {
+	public void setFullname(String fullname) {
+		this.fullname = fullname;
+	}
+
+	public boolean isAdmin() {
+		return isAdmin;
+	}
+
+	public void setAdmin(boolean isAdmin) {
+		this.isAdmin = isAdmin;
+	}
+
+	public String getPassword() {
         return this.password;
     }
 
@@ -47,6 +67,14 @@ public class User {
 
     public List<Phieucam> getPhieucams() {
         return this.phieucams;
+    }
+
+    public boolean isIsAdmin() {
+        return isAdmin;
+    }
+
+    public void setIsAdmin(boolean isAdmin) {
+        this.isAdmin = isAdmin;
     }
 
     public void setPhieucams(List<Phieucam> phieucams) {
