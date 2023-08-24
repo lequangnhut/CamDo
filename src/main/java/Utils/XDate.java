@@ -1,6 +1,10 @@
 package Utils;
 
+import java.sql.Timestamp;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 /**
@@ -28,4 +32,13 @@ public class XDate {
         date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
         return date;
     }
+
+    public static String curentDate() {
+        LocalDate currentDate = LocalDate.now();
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        String formattedDate = currentDate.format(formatter);
+        return formattedDate;
+    }
+
 }

@@ -5,8 +5,11 @@ import DAO.UserDao;
 import Entity.User;
 import Utils.MsgBox;
 import Utils.SessionManager;
+import Utils.UtilsFrame;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.prefs.Preferences;
 
 /**
@@ -25,12 +28,12 @@ public class LoginForm extends javax.swing.JFrame {
         init();
     }
 
-    public void init() {
+    private void init() {
         setIconImage(Toolkit.getDefaultToolkit().getImage(LoginForm.class.getResource("/Icon/windowbar.png")));
         rememberMe();
     }
 
-    public void rememberMe() {
+    private void rememberMe() {
         preferences = Preferences.userNodeForPackage(this.getClass());
         rememberPreferences = preferences.getBoolean("rememberMe", Boolean.valueOf(""));
         if (rememberPreferences) {
@@ -40,7 +43,7 @@ public class LoginForm extends javax.swing.JFrame {
         }
     }
 
-    public void login() {
+    private void login() {
         String username = txtUser.getText();
         String password = txtPassword.getText();
 
@@ -69,6 +72,7 @@ public class LoginForm extends javax.swing.JFrame {
                 mf.setExtendedState(MainFrame.MAXIMIZED_BOTH);
                 SessionManager.login(user);
                 dispose();
+                UtilsFrame.checkAndUpdateStatus();
                 historyDao.addHistory(user, "Đăng nhập");
                 MsgBox.alert(this, "Đăng nhập thành công !");
             } else {

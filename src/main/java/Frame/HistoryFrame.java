@@ -7,6 +7,7 @@ import Utils.XDate;
 import com.raven.datechooser.SelectedAction;
 import com.raven.datechooser.SelectedDate;
 import java.util.List;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 
 /**
@@ -22,7 +23,7 @@ public final class HistoryFrame extends javax.swing.JDialog {
         init();
     }
 
-    public void init() {
+    private void init() {
         showDataChooser();
         fillTable();
 
@@ -30,10 +31,17 @@ public final class HistoryFrame extends javax.swing.JDialog {
         UtilsFrame.applyStripedRowRendering(tblHistory);
     }
 
-    public void fillTable() {
+    private void fillTable() {
         int i = 1;
         DefaultTableModel model = (DefaultTableModel) tblHistory.getModel();
         model.setRowCount(0);
+
+        SwingUtilities.invokeLater(() -> {
+            int rowCount = tblHistory.getRowCount();
+            if (rowCount > 0) {
+                tblHistory.scrollRectToVisible(tblHistory.getCellRect(rowCount - 1, 0, true));
+            }
+        });
 
         String date = txtFindTableMonth.getText();
 
@@ -51,7 +59,7 @@ public final class HistoryFrame extends javax.swing.JDialog {
         }
     }
 
-    public void showDataChooser() {
+    private void showDataChooser() {
         dateChooser.addEventDateChooser((SelectedAction action, SelectedDate date) -> {
             if (action.getAction() == SelectedAction.DAY_SELECTED) {
                 dateChooser.hidePopup();
@@ -123,12 +131,12 @@ public final class HistoryFrame extends javax.swing.JDialog {
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 850, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 1200, Short.MAX_VALUE)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(15, 15, 15)
                 .addComponent(jLabel1)
-                .addGap(391, 391, 391)
-                .addComponent(txtFindTableMonth, javax.swing.GroupLayout.DEFAULT_SIZE, 243, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(txtFindTableMonth, javax.swing.GroupLayout.PREFERRED_SIZE, 243, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnFindTableMonth, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())

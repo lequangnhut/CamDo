@@ -7,6 +7,7 @@ import DAO.UserDao;
 import Entity.Phieucam;
 import Entity.User;
 import Utils.Clock;
+import Utils.CustomCellRenderer;
 import Utils.MsgBox;
 import Utils.SessionManager;
 import Utils.UtilsFrame;
@@ -15,9 +16,12 @@ import Utils.XMoney;
 import com.raven.datechooser.SelectedAction;
 import com.raven.datechooser.SelectedDate;
 import java.awt.Toolkit;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JFrame;
@@ -43,8 +47,8 @@ public class MainFrame extends JFrame {
     private void init() {
         initClock();
         initDate();
+        UtilsFrame.checkAndUpdateStatus();
         fillTable();
-        startDate();
         generalTotal();
         security();
         showDataChooser();
@@ -54,35 +58,6 @@ public class MainFrame extends JFrame {
         cboPhantramls.setSelectedItem(laisuatDao.getPhantramLS());
 
         setIconImage(Toolkit.getDefaultToolkit().getImage(MainFrame.class.getResource("/Icon/windowbar.png")));
-    }
-
-    public User user() {
-        User user = userDao.findUserByUsername(LoginForm.txtUser.getText());
-        return user;
-    }
-
-    public void showDataChooser() {
-        dateChooser.addEventDateChooser((SelectedAction action, SelectedDate date) -> {
-            if (action.getAction() == SelectedAction.DAY_SELECTED) {
-                dateChooser.hidePopup();
-            }
-        });
-    }
-
-    public void security() {
-        if (user().isIsAdmin()) {
-            btnBaoCao.setVisible(true);
-            txtFindTableMonth.setVisible(true);
-            btnFindTableMonth.setVisible(true);
-            lblFindTableMonth.setVisible(true);
-            btnBaoCao1.setVisible(true);
-        } else {
-            btnBaoCao.setVisible(false);
-            txtFindTableMonth.setVisible(false);
-            btnFindTableMonth.setVisible(false);
-            lblFindTableMonth.setVisible(false);
-            btnBaoCao1.setVisible(false);
-        }
     }
 
     private void initClock() {
@@ -99,14 +74,50 @@ public class MainFrame extends JFrame {
         lblDate.setText(str);
     }
 
-    public void startDate() {
-        Date currentDate = new Date();
-        txtFindDate1.setDate(currentDate);
-        txtFindDate2.setDate(currentDate);
+    private User user() {
+        User user = userDao.findUserByUsername(LoginForm.txtUser.getText());
+        return user;
+    }
+
+    private void showDataChooser() {
+        chooserDataByDate.addEventDateChooser((SelectedAction action, SelectedDate date) -> {
+            if (action.getAction() == SelectedAction.DAY_SELECTED) {
+                chooserDataByDate.hidePopup();
+            }
+        });
+
+        chooseDataByDateStrart.addEventDateChooser((SelectedAction action, SelectedDate date) -> {
+            if (action.getAction() == SelectedAction.DAY_SELECTED) {
+                chooserDataByDate.hidePopup();
+            }
+        });
+
+        chooseDataByDateEnd.addEventDateChooser((SelectedAction action, SelectedDate date) -> {
+            if (action.getAction() == SelectedAction.DAY_SELECTED) {
+                chooserDataByDate.hidePopup();
+            }
+        });
+    }
+
+    private void security() {
+        if (user().isIsAdmin()) {
+            btnBaoCao.setVisible(true);
+            txtFindTableMonth.setVisible(true);
+            btnFindTableMonth.setVisible(true);
+            lblFindTableMonth.setVisible(true);
+            btnBaoCao1.setVisible(true);
+        } else {
+            btnBaoCao.setVisible(false);
+            txtFindTableMonth.setVisible(false);
+            btnFindTableMonth.setVisible(false);
+            lblFindTableMonth.setVisible(false);
+            btnBaoCao1.setVisible(false);
+        }
     }
 
     private void fillTable() {
         int i = 1;
+        
         DefaultTableModel model = (DefaultTableModel) tblDanhsach.getModel();
         model.setRowCount(0);
 
@@ -121,12 +132,16 @@ public class MainFrame extends JFrame {
                 pc.getBienso(),
                 XMoney.formatMoney(pc.getGiacamco()),
                 XMoney.formatMoney(pc.getTienlai()),
-                XDate.toString(pc.getNgaycam(), "dd-MM-yyyy HH:mm:ss"),
-                XDate.toString(pc.getNgayhethan(), "dd-MM-yyyy HH:mm:ss"),
+                XDate.toString(pc.getNgaycam(), "dd-MM-yyyy"),
+                XDate.toString(pc.getNgayhethan(), "dd-MM-yyyy"),
                 pc.getStatus()
             };
             model.addRow(row);
         }
+    }
+
+    private void refeshTable() {
+
     }
 
 //    public void updatePhantramLS() {
@@ -139,37 +154,46 @@ public class MainFrame extends JFrame {
 //            MsgBox.alert(this, "Thay đổi phần trăm lãi suất thành công !");
 //        }
 //    }
-    public void fillFormMain() {
+    private void fillFormMain() {
         String maphieu = (String) tblDanhsach.getValueAt(this.row, 1);
         String date1 = (String) tblDanhsach.getValueAt(this.row, 7);
         String date2 = (String) tblDanhsach.getValueAt(this.row, 8);
         String trangthai = (String) tblDanhsach.getValueAt(this.row, 9);
 
         txtFind.setText(maphieu);
-        txtFindDate1.setDate(XDate.toDate(date1, "dd-MM-yyyy"));
-        txtFindDate2.setDate(XDate.toDate(date2, "dd-MM-yyyy"));
+        txtFindDate1.setText(date1);
+        txtFindDate2.setText(date2);
         cboTrangThai.setSelectedItem(trangthai);
     }
 
-    public void checkUpEdit() {
+    private void checkUpEdit() {
         int a = tblDanhsach.getSelectedRow();
         if (a < 0) {
-            MsgBox.alert(this, "Vui lòng chọn một biên lai !");
+            MsgBox.alert(this, "Vui lòng chọn một biên lai để sửa !");
         } else {
-            new EditTaiSan(this, true).setVisible(true);           
+            new EditTaiSan(this, true).setVisible(true);
         }
     }
 
-    public void checkUpDelete() {
+    private void checkUpDelete() {
         int a = tblDanhsach.getSelectedRow();
         if (a < 0) {
-            MsgBox.alert(this, "Vui lòng chọn một biên lai !");
+            MsgBox.alert(this, "Vui lòng chọn một biên lai để xoá !");
         } else {
             deletePhieu();
         }
     }
 
-    public void deletePhieu() {
+    private void checkUpDonglai() {
+        int a = tblDanhsach.getSelectedRow();
+        if (a < 0) {
+            MsgBox.alert(this, "Vui lòng chọn một biên lai để đóng lãi !");
+        } else {
+            new DongLaiFrame(this, true).setVisible(true);
+        }
+    }
+
+    private void deletePhieu() {
         String maphieu = (String) tblDanhsach.getValueAt(this.row, 1);
 
         if (MsgBox.comfirm(this, "Bạn có chắc chắn muốn xoá mã phiếu " + maphieu + " không ?")) {
@@ -200,14 +224,14 @@ public class MainFrame extends JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        dateChooser = new com.raven.datechooser.DateChooser();
+        chooserDataByDate = new com.raven.datechooser.DateChooser();
+        chooseDataByDateStrart = new com.raven.datechooser.DateChooser();
+        chooseDataByDateEnd = new com.raven.datechooser.DateChooser();
         jPanel1 = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
         txtFind = new javax.swing.JTextField();
-        txtFindDate1 = new com.toedter.calendar.JDateChooser();
         jLabel10 = new javax.swing.JLabel();
-        txtFindDate2 = new com.toedter.calendar.JDateChooser();
         jLabel11 = new javax.swing.JLabel();
         cboTrangThai = new javax.swing.JComboBox<>();
         btnFind = new javax.swing.JButton();
@@ -217,12 +241,16 @@ public class MainFrame extends JFrame {
         txtFindTableMonth = new javax.swing.JTextField();
         btnFindTableMonth = new javax.swing.JButton();
         lblFindTableMonth = new javax.swing.JLabel();
+        txtFindDate1 = new javax.swing.JTextField();
+        btnStrat = new javax.swing.JButton();
+        txtFindDate2 = new javax.swing.JTextField();
+        btnEnd = new javax.swing.JButton();
         jPanel3 = new javax.swing.JPanel();
         jPanel4 = new javax.swing.JPanel();
         btnEditTaiSan = new javax.swing.JButton();
-        btnPrintPhieu = new javax.swing.JButton();
+        btnDonglai = new javax.swing.JButton();
         btnAddTaiSan = new javax.swing.JButton();
-        btnExcel = new javax.swing.JButton();
+        btnChuocxe = new javax.swing.JButton();
         btnXoaPhieu = new javax.swing.JButton();
         btnBaoCao = new javax.swing.JButton();
         btnThoat = new javax.swing.JButton();
@@ -232,6 +260,7 @@ public class MainFrame extends JFrame {
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
         btnBaoCao1 = new javax.swing.JButton();
+        btnLammoi = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         tblDanhsach = new javax.swing.JTable();
         jPanel5 = new javax.swing.JPanel();
@@ -251,7 +280,11 @@ public class MainFrame extends JFrame {
         lblClock = new javax.swing.JLabel();
         jLabel29 = new javax.swing.JLabel();
 
-        dateChooser.setTextRefernce(txtFindTableMonth);
+        chooserDataByDate.setTextRefernce(txtFindTableMonth);
+
+        chooseDataByDateStrart.setTextRefernce(txtFindDate1);
+
+        chooseDataByDateEnd.setTextRefernce(txtFindDate2);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Quản Lý Cầm Xe");
@@ -263,16 +296,8 @@ public class MainFrame extends JFrame {
 
         txtFind.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
 
-        txtFindDate1.setDateFormatString("dd/MM/yyyy");
-        txtFindDate1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        txtFindDate1.setPreferredSize(new java.awt.Dimension(88, 26));
-
         jLabel10.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel10.setText("Đến ngày");
-
-        txtFindDate2.setDateFormatString("dd/MM/yyyy");
-        txtFindDate2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        txtFindDate2.setPreferredSize(new java.awt.Dimension(88, 26));
 
         jLabel11.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel11.setText("Trạng thái");
@@ -311,6 +336,26 @@ public class MainFrame extends JFrame {
         lblFindTableMonth.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         lblFindTableMonth.setText("Chọn Ngày / Tháng / Năm để hiển thị");
 
+        txtFindDate1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+
+        btnStrat.setText("...");
+        btnStrat.setPreferredSize(new java.awt.Dimension(50, 23));
+        btnStrat.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnStratActionPerformed(evt);
+            }
+        });
+
+        txtFindDate2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+
+        btnEnd.setText("...");
+        btnEnd.setPreferredSize(new java.awt.Dimension(50, 23));
+        btnEnd.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnEndActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -322,12 +367,18 @@ public class MainFrame extends JFrame {
                     .addComponent(txtFind, javax.swing.GroupLayout.PREFERRED_SIZE, 229, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel12)
-                    .addComponent(txtFindDate1, javax.swing.GroupLayout.PREFERRED_SIZE, 133, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(txtFindDate1, javax.swing.GroupLayout.PREFERRED_SIZE, 210, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnStrat, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jLabel12))
                 .addGap(18, 18, 18)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel10)
-                    .addComponent(txtFindDate2, javax.swing.GroupLayout.PREFERRED_SIZE, 133, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(txtFindDate2, javax.swing.GroupLayout.PREFERRED_SIZE, 210, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnEnd, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jLabel10))
                 .addGap(18, 18, 18)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel11)
@@ -354,18 +405,6 @@ public class MainFrame extends JFrame {
                         .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(6, 6, 6)
                         .addComponent(txtFind, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addComponent(jLabel12, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(6, 6, 6)
-                        .addComponent(txtFindDate1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addComponent(jLabel10, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(6, 6, 6)
-                        .addComponent(txtFindDate2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addComponent(jLabel11, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(6, 6, 6)
-                        .addComponent(cboTrangThai, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(btnFind, javax.swing.GroupLayout.PREFERRED_SIZE, 61, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addComponent(jLabel28, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -376,7 +415,20 @@ public class MainFrame extends JFrame {
                         .addGap(6, 6, 6)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(txtFindTableMonth, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(btnFindTableMonth, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addComponent(btnFindTableMonth, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel11, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(jLabel12, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jLabel10, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(txtFindDate1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnStrat, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(cboTrangThai, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(txtFindDate2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnEnd, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addContainerGap(9, Short.MAX_VALUE))
         );
 
@@ -391,12 +443,12 @@ public class MainFrame extends JFrame {
             }
         });
 
-        btnPrintPhieu.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        btnPrintPhieu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/Print preview.png"))); // NOI18N
-        btnPrintPhieu.setText("In Lai");
-        btnPrintPhieu.addActionListener(new java.awt.event.ActionListener() {
+        btnDonglai.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnDonglai.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/open-file-icon-16.png"))); // NOI18N
+        btnDonglai.setText("Đóng Lãi");
+        btnDonglai.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnPrintPhieuActionPerformed(evt);
+                btnDonglaiActionPerformed(evt);
             }
         });
 
@@ -409,12 +461,12 @@ public class MainFrame extends JFrame {
             }
         });
 
-        btnExcel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        btnExcel.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/excel.png"))); // NOI18N
-        btnExcel.setText("Xuất File Excel");
-        btnExcel.addActionListener(new java.awt.event.ActionListener() {
+        btnChuocxe.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnChuocxe.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/logout-icon-16.png"))); // NOI18N
+        btnChuocxe.setText("Chuộc Xe");
+        btnChuocxe.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnExcelActionPerformed(evt);
+                btnChuocxeActionPerformed(evt);
             }
         });
 
@@ -461,11 +513,20 @@ public class MainFrame extends JFrame {
         jLabel6.setText("2 of 200");
 
         btnBaoCao1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        btnBaoCao1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/Actions-view-choose-icon-24.png"))); // NOI18N
+        btnBaoCao1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/Help.png"))); // NOI18N
         btnBaoCao1.setText("Lịch Sử Hoạt Động");
         btnBaoCao1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnBaoCao1ActionPerformed(evt);
+            }
+        });
+
+        btnLammoi.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnLammoi.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/Refresh.png"))); // NOI18N
+        btnLammoi.setText("Làm mới");
+        btnLammoi.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnLammoiActionPerformed(evt);
             }
         });
 
@@ -489,11 +550,13 @@ public class MainFrame extends JFrame {
                 .addGap(18, 18, 18)
                 .addComponent(btnEditTaiSan)
                 .addGap(18, 18, 18)
-                .addComponent(btnPrintPhieu)
+                .addComponent(btnDonglai)
                 .addGap(18, 18, 18)
-                .addComponent(btnExcel)
+                .addComponent(btnChuocxe)
                 .addGap(18, 18, 18)
                 .addComponent(btnXoaPhieu)
+                .addGap(18, 18, 18)
+                .addComponent(btnLammoi)
                 .addGap(18, 18, 18)
                 .addComponent(btnThoat)
                 .addGap(18, 18, 18)
@@ -507,20 +570,21 @@ public class MainFrame extends JFrame {
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(btnLammoi, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(btnPrintPhieu, javax.swing.GroupLayout.DEFAULT_SIZE, 54, Short.MAX_VALUE)
+                        .addComponent(btnDonglai, javax.swing.GroupLayout.DEFAULT_SIZE, 54, Short.MAX_VALUE)
                         .addComponent(jLabel1)
                         .addComponent(jLabel3)
                         .addComponent(jLabel4)
                         .addComponent(jLabel5)
                         .addComponent(jLabel6))
-                    .addComponent(btnExcel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(btnXoaPhieu, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(btnThoat, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnChuocxe, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(btnEditTaiSan, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(btnAddTaiSan, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(btnBaoCao, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(btnBaoCao1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(btnBaoCao1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnXoaPhieu, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnThoat, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
@@ -737,13 +801,9 @@ public class MainFrame extends JFrame {
         checkUpEdit();
     }//GEN-LAST:event_btnEditTaiSanActionPerformed
 
-    private void btnPrintPhieuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPrintPhieuActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_btnPrintPhieuActionPerformed
-
-    private void btnExcelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExcelActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_btnExcelActionPerformed
+    private void btnDonglaiActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDonglaiActionPerformed
+        checkUpDonglai();
+    }//GEN-LAST:event_btnDonglaiActionPerformed
 
     private void btnXoaPhieuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnXoaPhieuActionPerformed
         checkUpDelete();
@@ -774,13 +834,29 @@ public class MainFrame extends JFrame {
     }//GEN-LAST:event_tblDanhsachMouseClicked
 
     private void btnFindTableMonthActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFindTableMonthActionPerformed
-        dateChooser.showPopup();
+        chooserDataByDate.showPopup();
     }//GEN-LAST:event_btnFindTableMonthActionPerformed
 
     private void btnBaoCao1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBaoCao1ActionPerformed
         new HistoryFrame(this, true).setVisible(true);
         historyDao.addHistory(user(), "Truy cập vào lịch sử hoạt động");
     }//GEN-LAST:event_btnBaoCao1ActionPerformed
+
+    private void btnStratActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStratActionPerformed
+        chooseDataByDateStrart.showPopup();
+    }//GEN-LAST:event_btnStratActionPerformed
+
+    private void btnEndActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEndActionPerformed
+        chooseDataByDateEnd.showPopup();
+    }//GEN-LAST:event_btnEndActionPerformed
+
+    private void btnChuocxeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnChuocxeActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_btnChuocxeActionPerformed
+
+    private void btnLammoiActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLammoiActionPerformed
+        refeshTable();
+    }//GEN-LAST:event_btnLammoiActionPerformed
 
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
@@ -827,16 +903,21 @@ public class MainFrame extends JFrame {
     private javax.swing.JButton btnAddTaiSan;
     private javax.swing.JButton btnBaoCao;
     private javax.swing.JButton btnBaoCao1;
+    private javax.swing.JButton btnChuocxe;
+    private javax.swing.JButton btnDonglai;
     private javax.swing.JButton btnEditTaiSan;
-    private javax.swing.JButton btnExcel;
+    private javax.swing.JButton btnEnd;
     private javax.swing.JButton btnFind;
     private javax.swing.JButton btnFindTableMonth;
-    private javax.swing.JButton btnPrintPhieu;
+    private javax.swing.JButton btnLammoi;
+    private javax.swing.JButton btnStrat;
     private javax.swing.JButton btnThoat;
     private javax.swing.JButton btnXoaPhieu;
     private javax.swing.JComboBox<String> cboPhantramls;
     private javax.swing.JComboBox<String> cboTrangThai;
-    private com.raven.datechooser.DateChooser dateChooser;
+    private com.raven.datechooser.DateChooser chooseDataByDateEnd;
+    private com.raven.datechooser.DateChooser chooseDataByDateStrart;
+    private com.raven.datechooser.DateChooser chooserDataByDate;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -871,8 +952,8 @@ public class MainFrame extends JFrame {
     public static javax.swing.JLabel lblTongPhieuThang;
     public static javax.swing.JTable tblDanhsach;
     private javax.swing.JTextField txtFind;
-    private com.toedter.calendar.JDateChooser txtFindDate1;
-    private com.toedter.calendar.JDateChooser txtFindDate2;
+    private javax.swing.JTextField txtFindDate1;
+    private javax.swing.JTextField txtFindDate2;
     private javax.swing.JTextField txtFindTableMonth;
     // End of variables declaration//GEN-END:variables
 }

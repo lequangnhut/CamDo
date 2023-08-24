@@ -1,7 +1,7 @@
 package Entity;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
+import java.util.Date;
 
 @Entity
 @Table(name = "Phieucam")
@@ -17,9 +17,9 @@ public class Phieucam {
 
     private String maphieu;
 
-    private Timestamp ngaycam;
+    private Date ngaycam;
 
-    private Timestamp ngayhethan;
+    private Date ngayhethan;
 
     private String phonenumber;
 
@@ -28,6 +28,8 @@ public class Phieucam {
     private int tienlai;
 
     private String bienso;
+
+    private int songaydonglai;
 
     private boolean isActive;
 
@@ -72,19 +74,19 @@ public class Phieucam {
         this.maphieu = maphieu;
     }
 
-    public Timestamp getNgaycam() {
+    public Date getNgaycam() {
         return this.ngaycam;
     }
 
-    public void setNgaycam(Timestamp ngaycam) {
+    public void setNgaycam(Date ngaycam) {
         this.ngaycam = ngaycam;
     }
 
-    public Timestamp getNgayhethan() {
+    public Date getNgayhethan() {
         return this.ngayhethan;
     }
 
-    public void setNgayhethan(Timestamp ngayhethan) {
+    public void setNgayhethan(Date ngayhethan) {
         this.ngayhethan = ngayhethan;
     }
 
@@ -126,6 +128,14 @@ public class Phieucam {
 
     public void setBienso(String bienso) {
         this.bienso = bienso;
+    }
+
+    public int getSongaydonglai() {
+        return songaydonglai;
+    }
+
+    public void setSongaydonglai(int songaydonglai) {
+        this.songaydonglai = songaydonglai;
     }
 
     public boolean isIsActive() {

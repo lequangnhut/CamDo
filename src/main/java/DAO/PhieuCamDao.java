@@ -23,7 +23,7 @@ public class PhieuCamDao extends AbstactDao<Phieucam> {
         String jpql = "SELECT o FROM Phieucam o WHERE o.maphieu = ?0";
         return super.findOne(Phieucam.class, jpql, maphieu);
     }
-
+    
 //    tìm lai trong tháng
     public int findTotalPhieuTrongThang() {
         EntityManager entityManager = JPAUtil.getEntityManager();
