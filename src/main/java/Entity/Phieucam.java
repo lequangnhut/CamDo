@@ -1,41 +1,64 @@
 package Entity;
 
-import javax.persistence.*;
+import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
+
+/**
+ * The persistent class for the Phieucam database table.
+ *
+ */
 @Entity
-@Table(name = "Phieucam")
-public class Phieucam {
+@NamedQuery(name = "Phieucam.findAll", query = "SELECT p FROM Phieucam p")
+public class Phieucam implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    private String fullname;
-
-    private int giacamco;
-
-    private String maphieu;
-
-    private Date ngaycam;
-
-    private Date ngayhethan;
-
-    private String phonenumber;
-
-    private String status;
-
-    private int tienlai;
-
     private String bienso;
-
-    private int songaydonglai;
 
     private boolean isActive;
 
-    @ManyToOne
-    private Laisuat laisuat;
+    private String maphieu;
 
+    private Date ngayra;
+
+    private Date ngayvao;
+
+    private int phantram;
+
+    private String status;
+
+    private int tiengoc;
+
+    private int tienlai;
+
+    //bi-directional many-to-one association to Donglai
+    @OneToMany(mappedBy = "phieucam")
+    private List<Donglai> donglais;
+
+    //bi-directional many-to-one association to Customer
+    @ManyToOne
+    @JoinColumn(name = "makh_id")
+    private Customer customer;
+
+    //bi-directional many-to-one association to Phantramlai
+    @ManyToOne
+    private Phantramlai phantramlai;
+
+    //bi-directional many-to-one association to User
     @ManyToOne
     private User user;
 
@@ -50,20 +73,20 @@ public class Phieucam {
         this.id = id;
     }
 
-    public String getFullname() {
-        return this.fullname;
+    public String getBienso() {
+        return this.bienso;
     }
 
-    public void setFullname(String fullname) {
-        this.fullname = fullname;
+    public void setBienso(String bienso) {
+        this.bienso = bienso;
     }
 
-    public int getGiacamco() {
-        return this.giacamco;
+    public boolean getIsActive() {
+        return this.isActive;
     }
 
-    public void setGiacamco(int giacamco) {
-        this.giacamco = giacamco;
+    public void setIsActive(boolean isActive) {
+        this.isActive = isActive;
     }
 
     public String getMaphieu() {
@@ -74,28 +97,28 @@ public class Phieucam {
         this.maphieu = maphieu;
     }
 
-    public Date getNgaycam() {
-        return this.ngaycam;
+    public Date getNgayra() {
+        return this.ngayra;
     }
 
-    public void setNgaycam(Date ngaycam) {
-        this.ngaycam = ngaycam;
+    public void setNgayra(Date ngayra) {
+        this.ngayra = ngayra;
     }
 
-    public Date getNgayhethan() {
-        return this.ngayhethan;
+    public Date getNgayvao() {
+        return this.ngayvao;
     }
 
-    public void setNgayhethan(Date ngayhethan) {
-        this.ngayhethan = ngayhethan;
+    public void setNgayvao(Date ngayvao) {
+        this.ngayvao = ngayvao;
     }
 
-    public String getPhonenumber() {
-        return this.phonenumber;
+    public int getPhantram() {
+        return this.phantram;
     }
 
-    public void setPhonenumber(String phonenumber) {
-        this.phonenumber = phonenumber;
+    public void setPhantram(int phantram) {
+        this.phantram = phantram;
     }
 
     public String getStatus() {
@@ -106,6 +129,14 @@ public class Phieucam {
         this.status = status;
     }
 
+    public int getTiengoc() {
+        return this.tiengoc;
+    }
+
+    public void setTiengoc(int tiengoc) {
+        this.tiengoc = tiengoc;
+    }
+
     public int getTienlai() {
         return this.tienlai;
     }
@@ -114,36 +145,42 @@ public class Phieucam {
         this.tienlai = tienlai;
     }
 
-    public Laisuat getLaisuat() {
-        return this.laisuat;
+    public List<Donglai> getDonglais() {
+        return this.donglais;
     }
 
-    public void setLaisuat(Laisuat laisuat) {
-        this.laisuat = laisuat;
+    public void setDonglais(List<Donglai> donglais) {
+        this.donglais = donglais;
     }
 
-    public String getBienso() {
-        return bienso;
+    public Donglai addDonglai(Donglai donglai) {
+        getDonglais().add(donglai);
+        donglai.setPhieucam(this);
+
+        return donglai;
     }
 
-    public void setBienso(String bienso) {
-        this.bienso = bienso;
+    public Donglai removeDonglai(Donglai donglai) {
+        getDonglais().remove(donglai);
+        donglai.setPhieucam(null);
+
+        return donglai;
     }
 
-    public int getSongaydonglai() {
-        return songaydonglai;
+    public Customer getCustomer() {
+        return this.customer;
     }
 
-    public void setSongaydonglai(int songaydonglai) {
-        this.songaydonglai = songaydonglai;
+    public void setCustomer(Customer customer) {
+        this.customer = customer;
     }
 
-    public boolean isIsActive() {
-        return isActive;
+    public Phantramlai getPhantramlai() {
+        return this.phantramlai;
     }
 
-    public void setIsActive(boolean isActive) {
-        this.isActive = isActive;
+    public void setPhantramlai(Phantramlai phantramlai) {
+        this.phantramlai = phantramlai;
     }
 
     public User getUser() {

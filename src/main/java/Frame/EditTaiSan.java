@@ -1,9 +1,11 @@
 package Frame;
 
+import DAO.CustomerDao;
 import DAO.HistoryDao;
-import DAO.LaisuatDao;
+import DAO.PhantramlaiDao;
 import DAO.PhieuCamDao;
-import Entity.Laisuat;
+import Entity.Customer;
+import Entity.Phantramlai;
 import Entity.Phieucam;
 import static Frame.MainFrame.tblDanhsach;
 import Utils.MsgBox;
@@ -12,10 +14,6 @@ import Utils.XDate;
 import Utils.XMoney;
 import Utils.validateInput;
 import java.awt.Toolkit;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
 import java.util.List;
 import javax.swing.table.DefaultTableModel;
 
@@ -25,8 +23,9 @@ import javax.swing.table.DefaultTableModel;
 public final class EditTaiSan extends javax.swing.JDialog {
 
     private final PhieuCamDao phieuCamDao = new PhieuCamDao();
-    private final LaisuatDao laisuatDao = new LaisuatDao();
+    private final PhantramlaiDao laisuatDao = new PhantramlaiDao();
     private final HistoryDao historyDao = new HistoryDao();
+    private final CustomerDao customerDao = new CustomerDao();
 
     public EditTaiSan(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
@@ -37,14 +36,21 @@ public final class EditTaiSan extends javax.swing.JDialog {
     private void init() {
         setFalseText();
         fillFormEdit();
+        caculatorLaixuat();
 
         validateInput.allowOnlyText(txtFullname);
         validateInput.formatPhoneNumber(txtPhonenumber);
-        validateInput.autoUpperCaseWithMaxLength(txtBienso, 11);
+        validateInput.autoUpperCaseWithMaxLength(txtBienso, 10);
 
-        calculateDateDifference();
-        XMoney.caculatorLaixuat(txtSotien, txtTongtienthang);
         setIconImage(Toolkit.getDefaultToolkit().getImage(MainFrame.class.getResource("/Icon/windowbar.png")));
+    }
+
+    private void caculatorLaixuat() {
+        String maphieu = txtMaphieu.getText();
+        Phieucam pc = phieuCamDao.findByMaPhieu(maphieu);
+        if (pc != null) {
+            XMoney.caculatorLaixuat(txtSotien, txtTongtienthang, (pc.getPhantram() * 0.01));
+        }
     }
 
     private void setFalseText() {
@@ -54,22 +60,6 @@ public final class EditTaiSan extends javax.swing.JDialog {
         txtTongtienthang.setEnabled(false);
         txtDate1.setEnabled(false);
         txtDate2.setEnabled(false);
-        txtTongngay.setEnabled(false);
-    }
-
-    private void calculateDateDifference() {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
-        try {
-            Date startDate = dateFormat.parse(txtDate1.getText());
-            Date endDate = dateFormat.parse(txtDate2.getText());
-
-            long daysBetween = ChronoUnit.DAYS.between(
-                    startDate.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate(),
-                    endDate.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate());
-            txtTongngay.setText(String.valueOf(daysBetween));
-        } catch (ParseException ex) {
-            txtTongngay.setText("Trống");
-        }
     }
 
     private boolean check() {
@@ -104,7 +94,7 @@ public final class EditTaiSan extends javax.swing.JDialog {
         }
 
         // Kiểm tra biển số xe Việt Nam bằng biểu thức chính quy
-        String biensoRegex = "^[0-9]{2}[A-HJ-NP-Za-hj-np-z0-9]{2}-[0-9]{3,4}(\\.[0-9]{2})?$";
+        String biensoRegex = "^[0-9]{2}[A-HJ-NP-Za-hj-np-z0-9]{2}-[0-9]{4,5}\\s*$";
         if (!bienso.matches(biensoRegex)) {
             MsgBox.alert(this, "Biển số xe không đúng định dạng !");
             return false;
@@ -122,15 +112,14 @@ public final class EditTaiSan extends javax.swing.JDialog {
         Phieucam pc = phieuCamDao.findByMaPhieu(maphieu);
 
         if (pc != null) {
-            txtPhantram.setText(String.valueOf(pc.getLaisuat().getPhantram()));
-            txtFullname.setText(pc.getFullname());
-            txtPhonenumber.setText(String.valueOf(pc.getPhonenumber()));
+            txtPhantram.setText(String.valueOf(pc.getPhantram()));
+            txtFullname.setText(pc.getCustomer().getFullname());
+            txtPhonenumber.setText(String.valueOf(pc.getCustomer().getPhonenumber()));
             txtBienso.setText(pc.getBienso());
             txtMaphieu.setText(pc.getMaphieu());
-            txtSotien.setText(String.valueOf(XMoney.formatMoneyVIFormDB(pc.getGiacamco())));
-            txtDate1.setText(XDate.toString(pc.getNgaycam(), "dd-MM-yyyy"));
-            txtDate2.setText(XDate.toString(pc.getNgayhethan(), "dd-MM-yyyy"));
-            txtTongngay.setText(String.valueOf(pc.getSongaydonglai()));
+            txtSotien.setText(String.valueOf(XMoney.formatMoneyVIFormDB(pc.getTiengoc())));
+            txtDate1.setText(XDate.toString(pc.getNgayvao(), "dd-MM-yyyy"));
+            txtDate2.setText(XDate.toString(pc.getNgayra(), "dd-MM-yyyy"));
             txtTongtienthang.setText(String.valueOf(XMoney.formatMoneyVIFormDB(pc.getTienlai())));
         }
     }
@@ -147,13 +136,13 @@ public final class EditTaiSan extends javax.swing.JDialog {
             Object[] row = {
                 String.valueOf(i++),
                 pc.getMaphieu(),
-                pc.getFullname(),
-                pc.getPhonenumber(),
+                pc.getCustomer().getFullname(),
+                pc.getCustomer().getPhonenumber(),
                 pc.getBienso(),
-                XMoney.formatMoney(pc.getGiacamco()),
+                XMoney.formatMoney(pc.getTiengoc()),
                 XMoney.formatMoney(pc.getTienlai()),
-                XDate.toString(pc.getNgaycam(), "dd-MM-yyyy"),
-                XDate.toString(pc.getNgayhethan(), "dd-MM-yyyy"),
+                XDate.toString(pc.getNgayvao(), "dd-MM-yyyy"),
+                XDate.toString(pc.getNgayra(), "dd-MM-yyyy"),
                 pc.getStatus()
             };
             model.addRow(row);
@@ -166,11 +155,10 @@ public final class EditTaiSan extends javax.swing.JDialog {
         String phone = txtPhonenumber.getText();
         String bienso = txtBienso.getText();
         String sotien = txtSotien.getText();
-        String ngaycam = txtDate1.getText();
-        String ngaychuoc = txtDate2.getText();
-        String phantram = txtPhantram.getText();
+        String ngayvao = txtDate1.getText();
+        String ngayra = txtDate2.getText();
+        String phantramls = txtPhantram.getText();
         String tienlai = txtTongtienthang.getText();
-        String songaydonglai = txtTongngay.getText();
 
         String numberString = sotien.replaceAll("[^0-9]", "");
         int sotiencam = Integer.parseInt(numberString);
@@ -178,26 +166,30 @@ public final class EditTaiSan extends javax.swing.JDialog {
         String numberString2 = tienlai.replaceAll("[^0-9]", "");
         int sotienlai = Integer.parseInt(numberString2);
 
-        if (!maphieu.isEmpty() || !fullname.isEmpty() || !phone.isEmpty() || !bienso.isEmpty()
-                || !sotien.isEmpty() || ngaycam != null || ngaychuoc != null
-                || !phantram.isEmpty() || !tienlai.isEmpty()) {
+        String numberPart = phantramls.replace("%", "");
+        int phantram = Integer.parseInt(numberPart);
 
-            Laisuat ls = laisuatDao.findById();
+        if (!maphieu.isEmpty() || !fullname.isEmpty() || !phone.isEmpty() || !bienso.isEmpty()
+                || !sotien.isEmpty() || ngayvao != null || ngayra != null
+                || !tienlai.isEmpty()) {
+
+            Phantramlai ls = laisuatDao.findById();
             Phieucam pc = phieuCamDao.findByMaPhieu(maphieu);
+
+            Customer customer = customerDao.updateCustomer(fullname, phone);
 
             if (pc != null) {
                 pc.setMaphieu(maphieu);
-                pc.setFullname(fullname);
-                pc.setPhonenumber(phone);
-                pc.setGiacamco(sotiencam);
+                pc.setCustomer(customer);
+                pc.setTiengoc(sotiencam);
                 pc.setTienlai(sotienlai);
                 pc.setBienso(bienso);
-                pc.setNgaycam(XDate.toDate(ngaycam, "dd-MM-yyyy"));
-                pc.setNgayhethan(XDate.toDate(ngaychuoc, "dd-MM-yyyy"));
-                pc.setSongaydonglai(Integer.parseInt(songaydonglai));
-                pc.setStatus("Đang cầm");
+                pc.setNgayvao(XDate.toDate(ngayvao, "dd-MM-yyyy"));
+                pc.setNgayra(XDate.toDate(ngayra, "dd-MM-yyyy"));
+                pc.setStatus(pc.getStatus());
+                pc.setPhantram(phantram);
                 pc.setUser(SessionManager.getCurrentUser());
-                pc.setLaisuat(ls);
+                pc.setPhantramlai(ls);
                 pc.setIsActive(Boolean.TRUE);
             }
 
@@ -243,8 +235,6 @@ public final class EditTaiSan extends javax.swing.JDialog {
         jLabel12 = new javax.swing.JLabel();
         txtTongtienthang = new javax.swing.JTextField();
         jLabel13 = new javax.swing.JLabel();
-        jLabel14 = new javax.swing.JLabel();
-        txtTongngay = new javax.swing.JTextField();
         txtDate1 = new javax.swing.JTextField();
         txtDate2 = new javax.swing.JTextField();
         jPanel7 = new javax.swing.JPanel();
@@ -327,7 +317,7 @@ public final class EditTaiSan extends javax.swing.JDialog {
                         .addComponent(jLabel5)
                         .addGap(44, 44, 44)
                         .addComponent(txtBienso, javax.swing.GroupLayout.PREFERRED_SIZE, 252, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(372, Short.MAX_VALUE))
+                .addContainerGap(381, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -382,29 +372,19 @@ public final class EditTaiSan extends javax.swing.JDialog {
         jLabel13.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabel13.setText("%");
 
-        jLabel14.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel14.setText("Tổng số ngày");
-
-        txtTongngay.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
         jPanel6Layout.setHorizontalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel6Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel12)
-                    .addComponent(jLabel14))
+                .addComponent(jLabel12)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addComponent(txtPhantram, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(7, 7, 7)
-                        .addComponent(jLabel13)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(txtTongtienthang, javax.swing.GroupLayout.PREFERRED_SIZE, 127, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(txtTongngay))
+                .addComponent(txtPhantram, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(7, 7, 7)
+                .addComponent(jLabel13)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(txtTongtienthang, javax.swing.GroupLayout.PREFERRED_SIZE, 127, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel6Layout.setVerticalGroup(
@@ -416,11 +396,7 @@ public final class EditTaiSan extends javax.swing.JDialog {
                     .addComponent(txtPhantram)
                     .addComponent(txtTongtienthang)
                     .addComponent(jLabel13, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(13, 13, 13)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel14, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(txtTongngay))
-                .addContainerGap())
+                .addGap(45, 45, 45))
         );
 
         javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
@@ -448,23 +424,17 @@ public final class EditTaiSan extends javax.swing.JDialog {
                 .addContainerGap()
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addGap(12, 12, 12)
                         .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(jLabel10)
                             .addComponent(jLabel7)
                             .addComponent(jLabel11)
                             .addComponent(jLabel9))
+                        .addGap(36, 36, 36)
                         .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel4Layout.createSequentialGroup()
-                                .addGap(30, 30, 30)
-                                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(txtMaphieu)
-                                    .addComponent(txtSotien)))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup()
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 31, Short.MAX_VALUE)
-                                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(txtDate1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 203, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(txtDate2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 203, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addComponent(txtMaphieu)
+                            .addComponent(txtSotien)
+                            .addComponent(txtDate2, javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(txtDate1))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel4Layout.createSequentialGroup()
@@ -502,6 +472,7 @@ public final class EditTaiSan extends javax.swing.JDialog {
         );
 
         btnExit.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnExit.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/Delete.png"))); // NOI18N
         btnExit.setText("Thoát");
         btnExit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -510,6 +481,7 @@ public final class EditTaiSan extends javax.swing.JDialog {
         });
 
         btnSave.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnSave.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/Save.png"))); // NOI18N
         btnSave.setText("Chỉnh sửa");
         btnSave.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -518,7 +490,8 @@ public final class EditTaiSan extends javax.swing.JDialog {
         });
 
         btnSaveAndPrint.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        btnSaveAndPrint.setText("Lưu và in");
+        btnSaveAndPrint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/Task list.png"))); // NOI18N
+        btnSaveAndPrint.setText("In biên lai");
         btnSaveAndPrint.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnSaveAndPrintActionPerformed(evt);
@@ -530,12 +503,12 @@ public final class EditTaiSan extends javax.swing.JDialog {
         jPanel7Layout.setHorizontalGroup(
             jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel7Layout.createSequentialGroup()
-                .addGap(193, 193, 193)
+                .addGap(187, 187, 187)
                 .addComponent(btnSave)
                 .addGap(18, 18, 18)
                 .addComponent(btnSaveAndPrint)
                 .addGap(18, 18, 18)
-                .addComponent(btnExit, javax.swing.GroupLayout.PREFERRED_SIZE, 87, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(btnExit)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel7Layout.setVerticalGroup(
@@ -657,7 +630,6 @@ public final class EditTaiSan extends javax.swing.JDialog {
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel13;
-    private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
@@ -680,7 +652,6 @@ public final class EditTaiSan extends javax.swing.JDialog {
     private javax.swing.JTextField txtPhantram;
     private javax.swing.JTextField txtPhonenumber;
     private javax.swing.JTextField txtSotien;
-    private javax.swing.JTextField txtTongngay;
     private javax.swing.JTextField txtTongtienthang;
     // End of variables declaration//GEN-END:variables
 }

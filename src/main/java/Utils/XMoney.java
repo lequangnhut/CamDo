@@ -34,30 +34,30 @@ public class XMoney {
         return formattedAmount;
     }
 
-    public static void caculatorLaixuat(JTextField txtSotien, JTextField txtTongtienthang) {
+    public static void caculatorLaixuat(JTextField txtSotien, JTextField txtTongtienthang, double phantramls) {
         txtSotien.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                calculateInterest(txtSotien, txtTongtienthang);
+                calculateInterest(txtSotien, txtTongtienthang, phantramls);
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                calculateInterest(txtSotien, txtTongtienthang);
+                calculateInterest(txtSotien, txtTongtienthang, phantramls);
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-                calculateInterest(txtSotien, txtTongtienthang);
+                calculateInterest(txtSotien, txtTongtienthang, phantramls);
             }
         });
     }
 
-    public static void calculateInterest(JTextField txtSotien, JTextField txtTongtienthang) {
+    public static void calculateInterest(JTextField txtSotien, JTextField txtTongtienthang, double phantramls) {
         try {
             NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
             double amount = currencyFormat.parse(txtSotien.getText()).doubleValue();
-            double interestRate = 0.06; // Phần trăm lãi suất trong ví dụ này
+            double interestRate = phantramls; // Phần trăm lãi suất trong ví dụ này
             double interest = amount * interestRate;
             txtTongtienthang.setText(currencyFormat.format(interest));
         } catch (ParseException ex) {

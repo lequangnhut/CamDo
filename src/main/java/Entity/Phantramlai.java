@@ -1,11 +1,18 @@
 package Entity;
 
+import java.io.Serializable;
 import javax.persistence.*;
 import java.util.List;
 
+/**
+ * The persistent class for the Phantramlai database table.
+ *
+ */
 @Entity
-@Table(name = "Laisuat")
-public class Laisuat {
+@NamedQuery(name = "Phantramlai.findAll", query = "SELECT p FROM Phantramlai p")
+public class Phantramlai implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -13,10 +20,11 @@ public class Laisuat {
 
     private int phantram;
 
-    @OneToMany(mappedBy = "laisuat")
+    //bi-directional many-to-one association to Phieucam
+    @OneToMany(mappedBy = "phantramlai")
     private List<Phieucam> phieucams;
 
-    public Laisuat() {
+    public Phantramlai() {
     }
 
     public int getId() {
@@ -45,14 +53,14 @@ public class Laisuat {
 
     public Phieucam addPhieucam(Phieucam phieucam) {
         getPhieucams().add(phieucam);
-        phieucam.setLaisuat(this);
+        phieucam.setPhantramlai(this);
 
         return phieucam;
     }
 
     public Phieucam removePhieucam(Phieucam phieucam) {
         getPhieucams().remove(phieucam);
-        phieucam.setLaisuat(null);
+        phieucam.setPhantramlai(null);
 
         return phieucam;
     }

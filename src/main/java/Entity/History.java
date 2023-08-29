@@ -1,18 +1,19 @@
 package Entity;
 
+import java.io.Serializable;
+import javax.persistence.*;
 import java.sql.Timestamp;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
 
+/**
+ * The persistent class for the Historys database table.
+ *
+ */
 @Entity
 @Table(name = "Historys")
-public class History {
+@NamedQuery(name = "History.findAll", query = "SELECT h FROM History h")
+public class History implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,6 +25,7 @@ public class History {
     @Column(name = "ThoiGianTruyCap")
     private Timestamp thoiGianTruyCap;
 
+    //bi-directional many-to-one association to User
     @ManyToOne
     @JoinColumn(name = "userid")
     private User user;

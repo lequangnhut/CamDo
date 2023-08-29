@@ -8,8 +8,6 @@ import Utils.SessionManager;
 import Utils.UtilsFrame;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.util.prefs.Preferences;
 
 /**
@@ -29,7 +27,7 @@ public class LoginForm extends javax.swing.JFrame {
     }
 
     private void init() {
-        setIconImage(Toolkit.getDefaultToolkit().getImage(LoginForm.class.getResource("/Icon/windowbar.png")));
+        setIconImage(Toolkit.getDefaultToolkit().getImage(LoginForm.class.getResource("/Icon/logo.png")));
         rememberMe();
     }
 
@@ -67,18 +65,15 @@ public class LoginForm extends javax.swing.JFrame {
             }
 
             if (user != null) {
-                MainFrame mf = new MainFrame();
-                mf.setVisible(true);
-                mf.setExtendedState(MainFrame.MAXIMIZED_BOTH);
+                SplashScreen mf = new SplashScreen(this, true);
                 SessionManager.login(user);
-                dispose();
                 UtilsFrame.checkAndUpdateStatus();
+                mf.setVisible(true);
+                dispose();
                 historyDao.addHistory(user, "Đăng nhập");
-                MsgBox.alert(this, "Đăng nhập thành công !");
             } else {
                 MsgBox.alert(this, "Sai tên đăng nhập hoặc mật khẩu !");
             }
-
         }
     }
 
@@ -259,6 +254,12 @@ public class LoginForm extends javax.swing.JFrame {
         }
         //</editor-fold>
         //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
@@ -277,7 +278,7 @@ public class LoginForm extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel3;
-    private javax.swing.JPasswordField txtPassword;
+    public static javax.swing.JPasswordField txtPassword;
     public static javax.swing.JTextField txtUser;
     // End of variables declaration//GEN-END:variables
 }

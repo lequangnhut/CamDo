@@ -23,7 +23,12 @@ public class PhieuCamDao extends AbstactDao<Phieucam> {
         String jpql = "SELECT o FROM Phieucam o WHERE o.maphieu = ?0";
         return super.findOne(Phieucam.class, jpql, maphieu);
     }
-    
+
+    public List<Phieucam> findPhieucam(String malai, String bienso, String fullname, String phone) {
+        String jpql = "SELECT o FROM Phieucam o WHERE o.maphieu LIKE ?0 OR o.bienso LIKE ?1 OR o.customer.fullname LIKE ?2 OR o.customer.phonenumber LIKE ?3";
+        return super.findMany(Phieucam.class, jpql, "%" + malai + "%", "%" + bienso + "%", "%" + fullname + "%", "%" + phone + "%");
+    }
+
 //    tìm lai trong tháng
     public int findTotalPhieuTrongThang() {
         EntityManager entityManager = JPAUtil.getEntityManager();
@@ -31,7 +36,7 @@ public class PhieuCamDao extends AbstactDao<Phieucam> {
         LocalDate currentDate = LocalDate.now();
         int currentMonth = currentDate.getMonthValue();
 
-        String jpql = "SELECT COUNT(o) FROM Phieucam o WHERE MONTH(o.ngaycam) = ?0";
+        String jpql = "SELECT COUNT(o) FROM Phieucam o WHERE MONTH(o.ngayvao) = ?0";
         Query query = entityManager.createQuery(jpql);
         query.setParameter(0, currentMonth);
 
@@ -45,7 +50,7 @@ public class PhieuCamDao extends AbstactDao<Phieucam> {
         LocalDate currentDate = LocalDate.now();
         int currentMonth = currentDate.getMonthValue();
 
-        String jpql = "SELECT SUM(o.giacamco) FROM Phieucam o WHERE MONTH(o.ngaycam) = ?0";
+        String jpql = "SELECT SUM(o.tiengoc) FROM Phieucam o WHERE MONTH(o.ngayvao) = ?0";
         Query query = entityManager.createQuery(jpql);
         query.setParameter(0, currentMonth);
 
@@ -64,7 +69,7 @@ public class PhieuCamDao extends AbstactDao<Phieucam> {
         LocalDate currentDate = LocalDate.now();
         int dayOfMonth = currentDate.getDayOfMonth();
 
-        String jpql = "SELECT COUNT(o) FROM Phieucam o WHERE DAY(o.ngaycam) = ?0 AND isActive = 1";
+        String jpql = "SELECT COUNT(o) FROM Phieucam o WHERE DAY(o.ngayvao) = ?0 AND isActive = 1";
         Query query = entityManager.createQuery(jpql);
         query.setParameter(0, dayOfMonth);
 
@@ -78,7 +83,7 @@ public class PhieuCamDao extends AbstactDao<Phieucam> {
         LocalDate currentDate = LocalDate.now();
         int dayOfMonth = currentDate.getDayOfMonth();
 
-        String jpql = "SELECT SUM(o.giacamco) FROM Phieucam o WHERE DAY(o.ngaycam) = ?0 AND isActive = 1";
+        String jpql = "SELECT SUM(o.tiengoc) FROM Phieucam o WHERE DAY(o.ngayvao) = ?0 AND isActive = 1";
         Query query = entityManager.createQuery(jpql);
         query.setParameter(0, dayOfMonth);
 

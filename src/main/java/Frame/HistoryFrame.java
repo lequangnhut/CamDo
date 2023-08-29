@@ -7,7 +7,6 @@ import Utils.XDate;
 import com.raven.datechooser.SelectedAction;
 import com.raven.datechooser.SelectedDate;
 import java.util.List;
-import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 
 /**
@@ -27,6 +26,7 @@ public final class HistoryFrame extends javax.swing.JDialog {
         showDataChooser();
         fillTable();
 
+        UtilsFrame.scrollEndTable(tblHistory);
         UtilsFrame.boldTableHeader(tblHistory);
         UtilsFrame.applyStripedRowRendering(tblHistory);
     }
@@ -36,15 +36,9 @@ public final class HistoryFrame extends javax.swing.JDialog {
         DefaultTableModel model = (DefaultTableModel) tblHistory.getModel();
         model.setRowCount(0);
 
-        SwingUtilities.invokeLater(() -> {
-            int rowCount = tblHistory.getRowCount();
-            if (rowCount > 0) {
-                tblHistory.scrollRectToVisible(tblHistory.getCellRect(rowCount - 1, 0, true));
-            }
-        });
+        UtilsFrame.scrollEndTable(tblHistory);
 
         String date = txtFindTableMonth.getText();
-
         List<History> history = historyDao.findAll(XDate.toDate(date, "dd-MM-yyyy"));
 
         for (History his : history) {

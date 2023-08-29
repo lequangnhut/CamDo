@@ -1,10 +1,13 @@
 package Frame;
 
+import DAO.CustomerDao;
 import DAO.HistoryDao;
-import DAO.LaisuatDao;
+import DAO.PhantramlaiDao;
 import DAO.PhieuCamDao;
-import Entity.Laisuat;
+import Entity.Customer;
+import Entity.Phantramlai;
 import Entity.Phieucam;
+import static Frame.MainFrame.phieuCamDao;
 import static Frame.MainFrame.tblDanhsach;
 import Utils.MsgBox;
 import Utils.SessionManager;
@@ -14,9 +17,7 @@ import Utils.validateInput;
 import com.raven.datechooser.SelectedAction;
 import com.raven.datechooser.SelectedDate;
 import java.awt.Toolkit;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -26,91 +27,76 @@ import javax.swing.table.DefaultTableModel;
  * @author NHUTLQ
  */
 public final class AddTaiSan extends javax.swing.JDialog {
-
+    
     private final PhieuCamDao phieuCamDao = new PhieuCamDao();
-    private final LaisuatDao laisuatDao = new LaisuatDao();
+    private final PhantramlaiDao laisuatDao = new PhantramlaiDao();
     private final HistoryDao historyDao = new HistoryDao();
-
+    private final CustomerDao customerDao = new CustomerDao();
+    
     public AddTaiSan(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
         initComponents();
         init();
     }
-
+    
     public void init() {
         maxMaPhieu();
         setDate();
         setPhantramLS();
         showDataChooser();
-        calculateDateDifference();
-
+        
         txtPhantram.setEnabled(false);
         txtTongtienthang.setEnabled(false);
-        txtTongngay.setEnabled(false);
-
+        
         validateInput.allowOnlyText(txtFullname);
         validateInput.formatPhoneNumber(txtPhonenumber);
-        validateInput.autoUpperCaseWithMaxLength(txtBienso, 11);
-
-        XMoney.caculatorLaixuat(txtSotien, txtTongtienthang);
+        validateInput.autoUpperCaseWithMaxLength(txtBienso, 10);
+        
+        XMoney.caculatorLaixuat(txtSotien, txtTongtienthang, (laisuatDao.getPhantramLS() * 0.01));
         setIconImage(Toolkit.getDefaultToolkit().getImage(MainFrame.class.getResource("/Icon/windowbar.png")));
     }
-
+    
     private void showDataChooser() {
         chooserData1.addEventDateChooser((SelectedAction action, SelectedDate date) -> {
             if (action.getAction() == SelectedAction.DAY_SELECTED) {
                 chooserData1.hidePopup();
             }
         });
-
+        
         chooserData2.addEventDateChooser((SelectedAction action, SelectedDate date) -> {
             if (action.getAction() == SelectedAction.DAY_SELECTED) {
                 chooserData2.hidePopup();
             }
         });
     }
-
+    
     private void maxMaPhieu() {
         txtMaphieu.setEditable(false);
         txtMaphieu.setText(phieuCamDao.generateNewMaphieu());
     }
-
+    
     private void setPhantramLS() {
-        txtPhantram.setText(laisuatDao.getPhantramLS());
+        double phantramdb = laisuatDao.getPhantramLS();
+        int phantramint = (int) phantramdb;
+        txtPhantram.setText(String.valueOf(phantramint));
     }
-
+    
     private void setDate() {
         txtDate1.setText(XDate.curentDate());
         txtDate2.setText(dateToOneMonth());
     }
-
+    
     private String dateToOneMonth() {
         Calendar calendar = Calendar.getInstance();
-
+        
         calendar.add(Calendar.MONTH, 1);
         Date nextMonthDate = calendar.getTime();
-
+        
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
         String formattedNextMonthDate = sdf.format(nextMonthDate);
         return formattedNextMonthDate;
     }
-
-    private void calculateDateDifference() {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
-        try {
-            Date startDate = dateFormat.parse(txtDate1.getText());
-            Date endDate = dateFormat.parse(txtDate2.getText());
-
-            long daysBetween = ChronoUnit.DAYS.between(
-                    startDate.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate(),
-                    endDate.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate());
-
-            txtTongngay.setText(String.valueOf(daysBetween));
-        } catch (ParseException ex) {
-            txtTongngay.setText("Trống");
-        }
-    }
-
+    
     private void refeshForm() {
         txtFullname.setText("");
         txtPhonenumber.setText("");
@@ -119,7 +105,7 @@ public final class AddTaiSan extends javax.swing.JDialog {
         txtDate1.setText(XDate.curentDate());
         txtDate2.setText(dateToOneMonth());
     }
-
+    
     private boolean check() {
         String fullname = txtFullname.getText();
         String phone = txtPhonenumber.getText();
@@ -129,7 +115,7 @@ public final class AddTaiSan extends javax.swing.JDialog {
         String ngaychuoc = txtDate2.getText();
         String phantram = txtPhantram.getText();
         String tongtien = txtTongtienthang.getText();
-
+        
         if (fullname.isEmpty() || phone.isEmpty() || bienso.isEmpty()
                 || sotien.isEmpty() || ngaycam == null || ngaychuoc == null
                 || phantram.isEmpty() || tongtien.isEmpty()) {
@@ -152,40 +138,40 @@ public final class AddTaiSan extends javax.swing.JDialog {
         }
 
         // Kiểm tra biển số xe Việt Nam bằng biểu thức chính quy
-        String biensoRegex = "^[0-9]{2}[A-HJ-NP-Za-hj-np-z0-9]{2}-[0-9]{3,4}(\\.[0-9]{2})?$";
+        String biensoRegex = "^[0-9]{2}[A-HJ-NP-Za-hj-np-z0-9]{2}-[0-9]{4,5}$";
         if (!bienso.matches(biensoRegex)) {
             MsgBox.alert(this, "Biển số xe không đúng định dạng !");
             return false;
         }
-
+        
         return true;
     }
-
+    
     private void fillTable() {
         int i = 1;
-
+        
         DefaultTableModel model = (DefaultTableModel) tblDanhsach.getModel();
         model.setRowCount(0);
-
+        
         List<Phieucam> phieucam = phieuCamDao.findAll();
-
+        
         for (Phieucam pc : phieucam) {
             Object[] row = {
                 String.valueOf(i++),
                 pc.getMaphieu(),
-                pc.getFullname(),
-                pc.getPhonenumber(),
+                pc.getCustomer().getFullname(),
+                pc.getCustomer().getPhonenumber(),
                 pc.getBienso(),
-                XMoney.formatMoney(pc.getGiacamco()),
+                XMoney.formatMoney(pc.getTiengoc()),
                 XMoney.formatMoney(pc.getTienlai()),
-                XDate.toString(pc.getNgaycam(), "dd-MM-yyyy"),
-                XDate.toString(pc.getNgayhethan(), "dd-MM-yyyy"),
+                XDate.toString(pc.getNgayvao(), "dd-MM-yyyy"),
+                XDate.toString(pc.getNgayra(), "dd-MM-yyyy"),
                 pc.getStatus()
             };
             model.addRow(row);
         }
     }
-
+    
     private void addPhieu() {
         String maphieu = txtMaphieu.getText();
         String fullname = txtFullname.getText();
@@ -194,36 +180,44 @@ public final class AddTaiSan extends javax.swing.JDialog {
         String sotien = txtSotien.getText();
         String ngaycam = txtDate1.getText();
         String ngaychuoc = txtDate2.getText();
-        String phantram = txtPhantram.getText();
+        String phantramls = txtPhantram.getText();
         String tienlai = txtTongtienthang.getText();
-        String tongsongay = txtTongngay.getText();
-
+        
         String numberString1 = sotien.replaceAll("[^0-9]", "");
         int sotiencam = Integer.parseInt(numberString1);
-
+        
         String numberString2 = tienlai.replaceAll("[^0-9]", "");
         int sotienlai = Integer.parseInt(numberString2);
-
+        
+        String numberPart = phantramls.replace("%", "");
+        int phantram = Integer.parseInt(numberPart);
+        
         if (!maphieu.isEmpty() || !fullname.isEmpty() || !phone.isEmpty() || !bienso.isEmpty()
                 || !sotien.isEmpty() || ngaycam != null || ngaychuoc != null
-                || !phantram.isEmpty() || !tienlai.isEmpty()) {
-
-            Laisuat ls = laisuatDao.findById();
+                || !tienlai.isEmpty()) {
+            
+            Phantramlai ls = laisuatDao.findById();
+            
+            Customer cus = new Customer();
+            cus.setFullname(fullname);
+            cus.setPhonenumber(phone);
+            Customer customer = customerDao.addCustomer(cus);
+            
             Phieucam pc = new Phieucam();
-
+            
             pc.setMaphieu(maphieu);
-            pc.setFullname(fullname);
-            pc.setPhonenumber(phone);
-            pc.setGiacamco(sotiencam);
+            pc.setCustomer(customer);
+            pc.setTiengoc(sotiencam);
             pc.setTienlai(sotienlai);
             pc.setBienso(bienso);
-            pc.setNgaycam(XDate.toDate(ngaycam, "dd-MM-yyyy"));
-            pc.setNgayhethan(XDate.toDate(ngaychuoc, "dd-MM-yyyy"));
+            pc.setNgayvao(XDate.toDate(ngaycam, "dd-MM-yyyy"));
+            pc.setNgayra(XDate.toDate(ngaychuoc, "dd-MM-yyyy"));
             pc.setStatus("Đang cầm");
+            pc.setPhantram(phantram);
             pc.setUser(SessionManager.getCurrentUser());
-            pc.setLaisuat(ls);
+            pc.setPhantramlai(ls);
             pc.setIsActive(Boolean.TRUE);
-
+            
             if (MsgBox.comfirm(this, "Bạn chắc chắn các thông tin sau là chính xác ?")) {
                 Phieucam phieucam = phieuCamDao.addPhieu(pc);
                 if (phieucam != null) {
@@ -236,7 +230,7 @@ public final class AddTaiSan extends javax.swing.JDialog {
             }
         }
     }
-
+    
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -268,8 +262,6 @@ public final class AddTaiSan extends javax.swing.JDialog {
         jLabel12 = new javax.swing.JLabel();
         txtTongtienthang = new javax.swing.JTextField();
         jLabel13 = new javax.swing.JLabel();
-        jLabel14 = new javax.swing.JLabel();
-        txtTongngay = new javax.swing.JTextField();
         txtDate1 = new javax.swing.JTextField();
         txtDate2 = new javax.swing.JTextField();
         btnShowDate1 = new javax.swing.JButton();
@@ -360,7 +352,7 @@ public final class AddTaiSan extends javax.swing.JDialog {
                         .addComponent(jLabel5)
                         .addGap(44, 44, 44)
                         .addComponent(txtBienso, javax.swing.GroupLayout.PREFERRED_SIZE, 239, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(385, Short.MAX_VALUE))
+                .addContainerGap(387, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -415,29 +407,19 @@ public final class AddTaiSan extends javax.swing.JDialog {
         jLabel13.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabel13.setText("%");
 
-        jLabel14.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel14.setText("Tổng số ngày");
-
-        txtTongngay.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
         jPanel6Layout.setHorizontalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel6Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel12)
-                    .addComponent(jLabel14))
+                .addComponent(jLabel12)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(jPanel6Layout.createSequentialGroup()
-                        .addComponent(txtPhantram, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(7, 7, 7)
-                        .addComponent(jLabel13)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(txtTongtienthang, javax.swing.GroupLayout.PREFERRED_SIZE, 127, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(txtTongngay))
+                .addComponent(txtPhantram, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(7, 7, 7)
+                .addComponent(jLabel13)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(txtTongtienthang, javax.swing.GroupLayout.PREFERRED_SIZE, 127, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel6Layout.setVerticalGroup(
@@ -449,11 +431,7 @@ public final class AddTaiSan extends javax.swing.JDialog {
                     .addComponent(txtPhantram)
                     .addComponent(txtTongtienthang)
                     .addComponent(jLabel13, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel14, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(txtTongngay))
-                .addContainerGap())
+                .addGap(50, 50, 50))
         );
 
         javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
@@ -470,18 +448,8 @@ public final class AddTaiSan extends javax.swing.JDialog {
         );
 
         txtDate1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        txtDate1.addFocusListener(new java.awt.event.FocusAdapter() {
-            public void focusLost(java.awt.event.FocusEvent evt) {
-                txtDate1FocusLost(evt);
-            }
-        });
 
         txtDate2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        txtDate2.addFocusListener(new java.awt.event.FocusAdapter() {
-            public void focusLost(java.awt.event.FocusEvent evt) {
-                txtDate2FocusLost(evt);
-            }
-        });
 
         btnShowDate1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         btnShowDate1.setText("...");
@@ -507,7 +475,7 @@ public final class AddTaiSan extends javax.swing.JDialog {
                 .addContainerGap()
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addGap(16, 16, 16)
+                        .addGap(6, 6, 6)
                         .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel10, javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(jLabel7, javax.swing.GroupLayout.Alignment.TRAILING)
@@ -515,13 +483,13 @@ public final class AddTaiSan extends javax.swing.JDialog {
                             .addComponent(jLabel9, javax.swing.GroupLayout.Alignment.TRAILING))
                         .addGap(31, 31, 31)
                         .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(txtSotien, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 203, Short.MAX_VALUE)
+                            .addComponent(txtSotien, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 215, Short.MAX_VALUE)
                             .addComponent(txtMaphieu, javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel4Layout.createSequentialGroup()
-                                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(txtDate2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)
-                                    .addComponent(txtDate1, javax.swing.GroupLayout.Alignment.LEADING))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(txtDate1)
+                                    .addComponent(txtDate2))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(btnShowDate1)
                                     .addComponent(btnShowDate2))))
@@ -562,6 +530,7 @@ public final class AddTaiSan extends javax.swing.JDialog {
         );
 
         btnAdd.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnAdd.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/Add.png"))); // NOI18N
         btnAdd.setText("Thêm mới");
         btnAdd.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -570,6 +539,7 @@ public final class AddTaiSan extends javax.swing.JDialog {
         });
 
         btnExit.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnExit.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/Delete.png"))); // NOI18N
         btnExit.setText("Thoát");
         btnExit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -578,7 +548,8 @@ public final class AddTaiSan extends javax.swing.JDialog {
         });
 
         btnEditAndPrint.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        btnEditAndPrint.setText("Lưu và in");
+        btnEditAndPrint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/Save as.png"))); // NOI18N
+        btnEditAndPrint.setText("Thêm và in");
         btnEditAndPrint.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnEditAndPrintActionPerformed(evt);
@@ -586,6 +557,7 @@ public final class AddTaiSan extends javax.swing.JDialog {
         });
 
         btnAdd1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnAdd1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/Refresh.png"))); // NOI18N
         btnAdd1.setText("Mặc định");
         btnAdd1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -598,15 +570,15 @@ public final class AddTaiSan extends javax.swing.JDialog {
         jPanel7Layout.setHorizontalGroup(
             jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel7Layout.createSequentialGroup()
-                .addGap(170, 170, 170)
+                .addGap(121, 121, 121)
                 .addComponent(btnAdd)
                 .addGap(18, 18, 18)
                 .addComponent(btnEditAndPrint)
                 .addGap(18, 18, 18)
                 .addComponent(btnAdd1)
                 .addGap(18, 18, 18)
-                .addComponent(btnExit, javax.swing.GroupLayout.PREFERRED_SIZE, 87, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(btnExit)
+                .addContainerGap(120, Short.MAX_VALUE))
         );
         jPanel7Layout.setVerticalGroup(
             jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -687,18 +659,10 @@ public final class AddTaiSan extends javax.swing.JDialog {
         chooserData1.showPopup();
     }//GEN-LAST:event_btnShowDate1ActionPerformed
 
-    private void txtDate1FocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_txtDate1FocusLost
-        calculateDateDifference();
-    }//GEN-LAST:event_txtDate1FocusLost
-
-    private void txtDate2FocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_txtDate2FocusLost
-        calculateDateDifference();
-    }//GEN-LAST:event_txtDate2FocusLost
-
     private void btnAdd1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAdd1ActionPerformed
         refeshForm();
     }//GEN-LAST:event_btnAdd1ActionPerformed
-
+    
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
@@ -752,7 +716,6 @@ public final class AddTaiSan extends javax.swing.JDialog {
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel13;
-    private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
@@ -775,7 +738,6 @@ public final class AddTaiSan extends javax.swing.JDialog {
     private javax.swing.JTextField txtPhantram;
     private javax.swing.JTextField txtPhonenumber;
     private javax.swing.JTextField txtSotien;
-    private javax.swing.JTextField txtTongngay;
     private javax.swing.JTextField txtTongtienthang;
     // End of variables declaration//GEN-END:variables
 }

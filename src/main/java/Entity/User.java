@@ -1,24 +1,37 @@
 package Entity;
 
+import java.io.Serializable;
 import javax.persistence.*;
 import java.util.List;
 
+/**
+ * The persistent class for the Users database table.
+ *
+ */
 @Entity
 @Table(name = "Users")
-public class User {
+@NamedQuery(name = "User.findAll", query = "SELECT u FROM User u")
+public class User implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    
+
     private String fullname;
+
+    private boolean isAdmin;
 
     private String password;
 
     private String username;
 
-    private boolean isAdmin;
+    //bi-directional many-to-one association to History
+    @OneToMany(mappedBy = "user")
+    private List<History> historys;
 
+    //bi-directional many-to-one association to Phieucam
     @OneToMany(mappedBy = "user")
     private List<Phieucam> phieucams;
 
@@ -32,24 +45,24 @@ public class User {
     public void setId(int id) {
         this.id = id;
     }
-    
+
     public String getFullname() {
-		return fullname;
-	}
+        return this.fullname;
+    }
 
-	public void setFullname(String fullname) {
-		this.fullname = fullname;
-	}
+    public void setFullname(String fullname) {
+        this.fullname = fullname;
+    }
 
-	public boolean isAdmin() {
-		return isAdmin;
-	}
+    public boolean getIsAdmin() {
+        return this.isAdmin;
+    }
 
-	public void setAdmin(boolean isAdmin) {
-		this.isAdmin = isAdmin;
-	}
+    public void setIsAdmin(boolean isAdmin) {
+        this.isAdmin = isAdmin;
+    }
 
-	public String getPassword() {
+    public String getPassword() {
         return this.password;
     }
 
@@ -65,16 +78,30 @@ public class User {
         this.username = username;
     }
 
+    public List<History> getHistorys() {
+        return this.historys;
+    }
+
+    public void setHistorys(List<History> historys) {
+        this.historys = historys;
+    }
+
+    public History addHistory(History history) {
+        getHistorys().add(history);
+        history.setUser(this);
+
+        return history;
+    }
+
+    public History removeHistory(History history) {
+        getHistorys().remove(history);
+        history.setUser(null);
+
+        return history;
+    }
+
     public List<Phieucam> getPhieucams() {
         return this.phieucams;
-    }
-
-    public boolean isIsAdmin() {
-        return isAdmin;
-    }
-
-    public void setIsAdmin(boolean isAdmin) {
-        this.isAdmin = isAdmin;
     }
 
     public void setPhieucams(List<Phieucam> phieucams) {
